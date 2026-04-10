@@ -1,4 +1,12 @@
-node_modules
-dist
+node_modules/
+dist/
 .env
-uploads
+.env.local
+.env.*.local
+uploads/
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.codex
