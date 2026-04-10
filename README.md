@@ -20,6 +20,12 @@ npm install
 mysql -u root -p < sql/schema.sql
 ```
 
+常用数据操作语句可参考：
+
+```bash
+cat sql/dml.sql
+```
+
 3. 配置环境变量
 
 ```bash
@@ -65,3 +71,8 @@ npm run dev
 - `POST /api/admin/logout` 管理员退出
 - `GET /api/admin/me` 获取当前登录状态
 - `POST /api/upload` 上传封面图片
+
+## SQL 文件
+
+- `sql/schema.sql`：建库、建表、初始化示例数据
+- `sql/dml.sql`：常用新增、查询、更新、删除、统计语句
