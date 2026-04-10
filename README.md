@@ -26,6 +26,14 @@ mysql -u root -p < sql/schema.sql
 cp .env.example .env
 ```
 
+需要至少配置这些管理端鉴权项：
+
+```bash
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-password
+SESSION_SECRET=your-random-secret
+```
+
 4. 启动开发环境
 
 ```bash
@@ -37,6 +45,8 @@ npm run dev
 - 展示页：`http://localhost:3000/`
 - 管理端：`http://localhost:3000/admin`
 
+管理端登录后才能新增、编辑、删除游戏数据。
+
 ## API 概览
 
 - `GET /api/games` 获取游戏列表
@@ -44,3 +54,6 @@ npm run dev
 - `POST /api/games` 新增游戏
 - `PUT /api/games/:id` 更新游戏
 - `DELETE /api/games/:id` 删除游戏
+- `POST /api/admin/login` 管理员登录
+- `POST /api/admin/logout` 管理员退出
+- `GET /api/admin/me` 获取当前登录状态

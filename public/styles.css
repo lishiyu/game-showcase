@@ -31,7 +31,8 @@ a {
 
 .hero,
 .page,
-.admin-layout {
+.admin-layout,
+.admin-page {
   width: min(1200px, calc(100vw - 32px));
   margin: 0 auto;
 }
@@ -181,10 +182,32 @@ textarea {
   padding: 28px 0;
 }
 
+.admin-page {
+  display: grid;
+  gap: 20px;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 20px;
+}
+
+.auth-panel {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .form-grid {
@@ -220,6 +243,10 @@ label {
   border-radius: 20px;
   color: var(--muted);
   text-align: center;
+}
+
+.hidden {
+  display: none;
 }
 
 @media (max-width: 900px) {

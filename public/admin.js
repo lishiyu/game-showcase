@@ -1,7 +1,24 @@
+const loginPanel = document.querySelector("#loginPanel");
+const adminApp = document.querySelector("#adminApp");
+const loginForm = document.querySelector("#loginForm");
+const loginMessage = document.querySelector("#loginMessage");
+const logoutButton = document.querySelector("#logoutButton");
+const currentUser = document.querySelector("#currentUser");
 const form = document.querySelector("#gameForm");
 const adminList = document.querySelector("#adminList");
 const adminMessage = document.querySelector("#adminMessage");
 const resetButton = document.querySelector("#resetButton");
+
+function showLoginView() {
+  loginPanel.classList.remove("hidden");
+  adminApp.classList.add("hidden");
+}
+
+function showAdminView(username) {
+  currentUser.textContent = `当前登录：${username}`;
+  loginPanel.classList.add("hidden");
+  adminApp.classList.remove("hidden");
+}
 
 function formDataToPayload() {
   return {
@@ -33,6 +50,30 @@ async function loadGames() {
   adminMessage.textContent = `共 ${games.length} 条记录`;
 }
 
+async function checkAuth() {
+  const response = await fetch("/api/admin/me");
+
+  if (!response.ok) {
+    showLoginView();
+    return false;
+  }
+
+  const result = await response.json();
+  showAdminView(result.username);
+  await loadGames();
+  return true;
+}
+
+async function handleUnauthorized(response) {
+  if (response.status !== 401) {
+    return false;
+  }
+
+  showLoginView();
+  loginMessage.textContent = "登录已失效，请重新登录";
+  return true;
+}
+
 function renderAdminList(games) {
   adminList.innerHTML = "";
 
@@ -61,6 +102,33 @@ function renderAdminList(games) {
   }
 }
 
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginMessage.textContent = "";
+
+  const response = await fetch("/api/admin/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username: document.querySelector("#loginUsername").value,
+      password: document.querySelector("#loginPassword").value
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    loginMessage.textContent = result.message || "登录失败";
+    return;
+  }
+
+  document.querySelector("#loginPassword").value = "";
+  showAdminView(result.username);
+  await loadGames();
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const gameId = document.querySelector("#gameId").value;
@@ -78,6 +146,9 @@ form.addEventListener("submit", async (event) => {
   const result = await response.json();
 
   if (!response.ok) {
+    if (await handleUnauthorized(response)) {
+      return;
+    }
     alert(result.message || result.error || "保存失败");
     return;
   }
@@ -116,6 +187,9 @@ adminList.addEventListener("click", async (event) => {
     const result = await response.json();
 
     if (!response.ok) {
+      if (await handleUnauthorized(response)) {
+        return;
+      }
       alert(result.message || "删除失败");
       return;
     }
@@ -126,4 +200,12 @@ adminList.addEventListener("click", async (event) => {
 
 resetButton.addEventListener("click", () => setForm(null));
 
-loadGames();
+logoutButton.addEventListener("click", async () => {
+  await fetch("/api/admin/logout", { method: "POST" });
+  showLoginView();
+  setForm(null);
+  adminList.innerHTML = "";
+  adminMessage.textContent = "";
+});
+
+checkAuth();

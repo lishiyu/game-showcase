@@ -7,60 +7,90 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="admin-body">
-    <main class="admin-layout">
-      <section class="panel">
+    <main class="admin-page">
+      <section id="loginPanel" class="panel auth-panel">
         <div class="section-head">
           <div>
-            <p class="eyebrow">ADMIN</p>
-            <h1>维护游戏信息</h1>
+            <p class="eyebrow">ADMIN LOGIN</p>
+            <h1>登录管理端</h1>
           </div>
           <a class="button button--ghost" href="/">返回展示页</a>
         </div>
-
-        <form id="gameForm" class="form-grid">
-          <input type="hidden" id="gameId" />
+        <form id="loginForm" class="auth-form">
           <label>
-            游戏名称
-            <input id="name" name="name" placeholder="例如：Black Myth: Wukong" required />
+            管理账号
+            <input id="loginUsername" name="username" placeholder="请输入管理员账号" required />
           </label>
           <label>
-            图片地址
-            <input id="coverImage" name="coverImage" placeholder="https://..." required />
+            登录密码
+            <input id="loginPassword" name="password" type="password" placeholder="请输入密码" required />
           </label>
-          <label>
-            网盘地址
-            <input id="cloudLink" name="cloudLink" placeholder="https://pan.xxx.com/..." required />
-          </label>
-          <label>
-            游戏类型
-            <input id="genre" name="genre" placeholder="Action RPG" />
-          </label>
-          <label>
-            支持平台
-            <input id="platform" name="platform" placeholder="PC / PS5 / Xbox" />
-          </label>
-          <label>
-            排序值
-            <input id="sortOrder" name="sortOrder" type="number" value="0" />
-          </label>
-          <label class="form-grid__full">
-            简介说明
-            <textarea id="summary" name="summary" rows="5" placeholder="填写游戏介绍、版本说明或提取码提示"></textarea>
-          </label>
-          <div class="form-actions form-grid__full">
-            <button type="submit" class="button">保存游戏</button>
-            <button type="button" class="button button--ghost" id="resetButton">重置表单</button>
+          <div class="form-actions">
+            <button type="submit" class="button">登录</button>
+            <span id="loginMessage" class="muted"></span>
           </div>
         </form>
       </section>
 
-      <section class="panel">
-        <div class="section-head">
-          <h2>当前数据</h2>
-          <span id="adminMessage" class="muted"></span>
-        </div>
-        <div id="adminList" class="admin-list"></div>
-      </section>
+      <main id="adminApp" class="admin-layout hidden">
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">ADMIN</p>
+              <h1>维护游戏信息</h1>
+            </div>
+            <div class="toolbar">
+              <span id="currentUser" class="muted"></span>
+              <button id="logoutButton" type="button" class="button button--ghost">退出登录</button>
+              <a class="button button--ghost" href="/">返回展示页</a>
+            </div>
+          </div>
+
+          <form id="gameForm" class="form-grid">
+            <input type="hidden" id="gameId" />
+            <label>
+              游戏名称
+              <input id="name" name="name" placeholder="例如：Black Myth: Wukong" required />
+            </label>
+            <label>
+              图片地址
+              <input id="coverImage" name="coverImage" placeholder="https://..." required />
+            </label>
+            <label>
+              网盘地址
+              <input id="cloudLink" name="cloudLink" placeholder="https://pan.xxx.com/..." required />
+            </label>
+            <label>
+              游戏类型
+              <input id="genre" name="genre" placeholder="Action RPG" />
+            </label>
+            <label>
+              支持平台
+              <input id="platform" name="platform" placeholder="PC / PS5 / Xbox" />
+            </label>
+            <label>
+              排序值
+              <input id="sortOrder" name="sortOrder" type="number" value="0" />
+            </label>
+            <label class="form-grid__full">
+              简介说明
+              <textarea id="summary" name="summary" rows="5" placeholder="填写游戏介绍、版本说明或提取码提示"></textarea>
+            </label>
+            <div class="form-actions form-grid__full">
+              <button type="submit" class="button">保存游戏</button>
+              <button type="button" class="button button--ghost" id="resetButton">重置表单</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>当前数据</h2>
+            <span id="adminMessage" class="muted"></span>
+          </div>
+          <div id="adminList" class="admin-list"></div>
+        </section>
+      </main>
     </main>
 
     <script src="/admin.js"></script>
