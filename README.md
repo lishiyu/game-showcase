@@ -20,6 +20,12 @@ npm install
 mysql -u root -p < sql/schema.sql
 ```
 
+导入初始化示例数据：
+
+```bash
+mysql -u root -p < sql/seed.sql
+```
+
 常用数据操作语句可参考：
 
 ```bash
@@ -74,5 +80,6 @@ npm run dev
 
 ## SQL 文件
 
-- `sql/schema.sql`：建库、建表、初始化示例数据
+- `sql/schema.sql`：建库、建表
+- `sql/seed.sql`：初始化示例数据
 - `sql/dml.sql`：常用新增、查询、更新、删除、统计语句
