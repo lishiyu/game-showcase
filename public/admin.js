@@ -8,6 +8,20 @@ const form = document.querySelector("#gameForm");
 const adminList = document.querySelector("#adminList");
 const adminMessage = document.querySelector("#adminMessage");
 const resetButton = document.querySelector("#resetButton");
+const coverFileInput = document.querySelector("#coverFile");
+const coverImageInput = document.querySelector("#coverImage");
+const coverPreview = document.querySelector("#coverPreview");
+
+function updateCoverPreview(src) {
+  if (!src) {
+    coverPreview.classList.add("hidden");
+    coverPreview.removeAttribute("src");
+    return;
+  }
+
+  coverPreview.src = src;
+  coverPreview.classList.remove("hidden");
+}
 
 function showLoginView() {
   loginPanel.classList.remove("hidden");
@@ -21,26 +35,33 @@ function showAdminView(username) {
 }
 
 function formDataToPayload() {
-  return {
-    name: document.querySelector("#name").value,
-    coverImage: document.querySelector("#coverImage").value,
-    cloudLink: document.querySelector("#cloudLink").value,
-    genre: document.querySelector("#genre").value,
-    platform: document.querySelector("#platform").value,
-    summary: document.querySelector("#summary").value,
-    sortOrder: Number(document.querySelector("#sortOrder").value || 0)
-  };
+  const payload = new FormData();
+  payload.append("name", document.querySelector("#name").value);
+  payload.append("coverImage", coverImageInput.value);
+  payload.append("cloudLink", document.querySelector("#cloudLink").value);
+  payload.append("genre", document.querySelector("#genre").value);
+  payload.append("platform", document.querySelector("#platform").value);
+  payload.append("summary", document.querySelector("#summary").value);
+  payload.append("sortOrder", String(Number(document.querySelector("#sortOrder").value || 0)));
+
+  if (coverFileInput.files[0]) {
+    payload.append("coverFile", coverFileInput.files[0]);
+  }
+
+  return payload;
 }
 
 function setForm(game) {
   document.querySelector("#gameId").value = game?.id || "";
   document.querySelector("#name").value = game?.name || "";
-  document.querySelector("#coverImage").value = game?.cover_image || "";
+  coverImageInput.value = game?.cover_image || "";
   document.querySelector("#cloudLink").value = game?.cloud_link || "";
   document.querySelector("#genre").value = game?.genre || "";
   document.querySelector("#platform").value = game?.platform || "";
   document.querySelector("#summary").value = game?.summary || "";
   document.querySelector("#sortOrder").value = game?.sort_order || 0;
+  coverFileInput.value = "";
+  updateCoverPreview(game?.cover_image || "");
 }
 
 async function loadGames() {
@@ -137,10 +158,7 @@ form.addEventListener("submit", async (event) => {
 
   const response = await fetch(url, {
     method,
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(formDataToPayload())
+    body: formDataToPayload()
   });
 
   const result = await response.json();
@@ -199,6 +217,20 @@ adminList.addEventListener("click", async (event) => {
 });
 
 resetButton.addEventListener("click", () => setForm(null));
+
+coverImageInput.addEventListener("input", (event) => {
+  updateCoverPreview(event.target.value.trim());
+});
+
+coverFileInput.addEventListener("change", () => {
+  const file = coverFileInput.files[0];
+  if (!file) {
+    updateCoverPreview(coverImageInput.value.trim());
+    return;
+  }
+
+  updateCoverPreview(URL.createObjectURL(file));
+});
 
 logoutButton.addEventListener("click", async () => {
   await fetch("/api/admin/logout", { method: "POST" });

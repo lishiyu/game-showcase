@@ -30,8 +30,14 @@ cp .env.example .env
 
 ```bash
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-password
+ADMIN_PASSWORD_HASH=your-bcrypt-hash
 SESSION_SECRET=your-random-secret
+```
+
+生成 bcrypt 密码哈希示例：
+
+```bash
+node -e "const bcrypt=require('bcryptjs'); console.log(bcrypt.hashSync('your-password', 12))"
 ```
 
 4. 启动开发环境
@@ -46,6 +52,7 @@ npm run dev
 - 管理端：`http://localhost:3000/admin`
 
 管理端登录后才能新增、编辑、删除游戏数据。
+管理端支持直接上传封面图片，文件会保存到本地 `uploads/` 目录，并通过 `/uploads/...` 对外访问。
 
 ## API 概览
 
@@ -57,3 +64,4 @@ npm run dev
 - `POST /api/admin/login` 管理员登录
 - `POST /api/admin/logout` 管理员退出
 - `GET /api/admin/me` 获取当前登录状态
+- `POST /api/upload` 上传封面图片

@@ -1,7 +1,10 @@
 import path from "path";
+import fs from "fs";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import multer from "multer";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "./db";
 
@@ -10,14 +13,46 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const publicDir = path.join(__dirname, "..", "public");
+const uploadsDir = path.join(__dirname, "..", "uploads");
 const adminUsername = process.env.ADMIN_USERNAME || "admin";
-const adminPassword = process.env.ADMIN_PASSWORD || "admin123456";
+const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || "$2a$12$1qdnQ8wW7rQERBvrFicaQeDgQfIc8A7An0MhN8jY5OnKwZq2UTWyC";
 const sessionSecret = process.env.SESSION_SECRET || "change-me-in-production";
 const sessionCookieName = "admin_session";
+const loginAttemptLimit = 5;
+const loginWindowMs = 15 * 60 * 1000;
+
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => {
+      callback(null, uploadsDir);
+    },
+    filename: (_req, file, callback) => {
+      const extension = path.extname(file.originalname).toLowerCase();
+      const safeExtension = extension || ".jpg";
+      callback(null, `${Date.now()}-${crypto.randomUUID()}${safeExtension}`);
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter: (_req, file, callback) => {
+    if (!file.mimetype.startsWith("image/")) {
+      callback(new Error("仅支持上传图片文件"));
+      return;
+    }
+
+    callback(null, true);
+  }
+});
+
+const loginAttempts = new Map<string, { count: number; firstAttemptAt: number }>();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(publicDir));
+app.use("/uploads", express.static(uploadsDir));
 
 type GamePayload = {
   name?: string;
@@ -27,6 +62,11 @@ type GamePayload = {
   platform?: string;
   summary?: string;
   sortOrder?: number;
+};
+
+type LoginAttemptRecord = {
+  count: number;
+  firstAttemptAt: number;
 };
 
 type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
@@ -111,6 +151,52 @@ function clearSessionCookie(res: Response) {
   );
 }
 
+function getClientIp(req: Request) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.trim()) {
+    return forwarded.split(",")[0].trim();
+  }
+
+  return req.socket.remoteAddress || "unknown";
+}
+
+function getActiveAttempt(ip: string): LoginAttemptRecord | null {
+  const attempt = loginAttempts.get(ip);
+
+  if (!attempt) {
+    return null;
+  }
+
+  if (Date.now() - attempt.firstAttemptAt > loginWindowMs) {
+    loginAttempts.delete(ip);
+    return null;
+  }
+
+  return attempt;
+}
+
+function remainingLockSeconds(attempt: LoginAttemptRecord) {
+  const expiresAt = attempt.firstAttemptAt + loginWindowMs;
+  return Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000));
+}
+
+function registerFailedLogin(ip: string) {
+  const current = getActiveAttempt(ip);
+
+  if (!current) {
+    loginAttempts.set(ip, { count: 1, firstAttemptAt: Date.now() });
+    return 1;
+  }
+
+  current.count += 1;
+  loginAttempts.set(ip, current);
+  return current.count;
+}
+
+function clearFailedLogins(ip: string) {
+  loginAttempts.delete(ip);
+}
+
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const username = readSessionUser(req);
 
@@ -122,9 +208,9 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function normalizePayload(payload: GamePayload) {
+function normalizePayload(payload: GamePayload, file?: Express.Multer.File) {
   const name = payload.name?.trim();
-  const coverImage = payload.coverImage?.trim();
+  const coverImage = file ? `/uploads/${file.filename}` : payload.coverImage?.trim();
   const cloudLink = payload.cloudLink?.trim();
 
   if (!name || !coverImage || !cloudLink) {
@@ -161,14 +247,26 @@ app.get("/api/admin/me", (req: Request, res: Response) => {
 });
 
 app.post("/api/admin/login", (req: Request, res: Response) => {
+  const clientIp = getClientIp(req);
+  const activeAttempt = getActiveAttempt(clientIp);
+
+  if (activeAttempt && activeAttempt.count >= loginAttemptLimit) {
+    res.status(429).json({
+      message: `登录失败次数过多，请在 ${remainingLockSeconds(activeAttempt)} 秒后重试`
+    });
+    return;
+  }
+
   const username = String(req.body.username || "").trim();
   const password = String(req.body.password || "");
 
-  if (username !== adminUsername || password !== adminPassword) {
+  if (username !== adminUsername || !bcrypt.compareSync(password, adminPasswordHash)) {
+    registerFailedLogin(clientIp);
     res.status(401).json({ message: "账号或密码错误" });
     return;
   }
 
+  clearFailedLogins(clientIp);
   setSessionCookie(res, username);
   res.json({ success: true, username });
 });
@@ -210,8 +308,17 @@ app.get("/api/games/:id", asyncHandler(async (req: Request, res: Response) => {
   res.json(rows[0]);
 }));
 
-app.post("/api/games", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
-  const normalized = normalizePayload(req.body);
+app.post("/api/upload", requireAdmin, upload.single("coverFile"), (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ message: "请选择要上传的图片" });
+    return;
+  }
+
+  res.status(201).json({ path: `/uploads/${req.file.filename}` });
+});
+
+app.post("/api/games", requireAdmin, upload.single("coverFile"), asyncHandler(async (req: Request, res: Response) => {
+  const normalized = normalizePayload(req.body, req.file);
 
   if ("error" in normalized) {
     res.status(400).json(normalized);
@@ -240,9 +347,9 @@ app.post("/api/games", requireAdmin, asyncHandler(async (req: Request, res: Resp
   res.status(201).json(rows[0]);
 }));
 
-app.put("/api/games/:id", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+app.put("/api/games/:id", requireAdmin, upload.single("coverFile"), asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
-  const normalized = normalizePayload(req.body);
+  const normalized = normalizePayload(req.body, req.file);
 
   if ("error" in normalized) {
     res.status(400).json(normalized);

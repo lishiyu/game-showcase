@@ -203,6 +203,20 @@ textarea {
   gap: 16px;
 }
 
+.upload-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.cover-preview {
+  width: min(100%, 280px);
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .toolbar {
   display: flex;
   gap: 12px;
