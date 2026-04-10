@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>游戏资源库</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__inner">
+        <p class="eyebrow">GAME SHOWCASE</p>
+        <h1>游戏资源展示平台</h1>
+        <p class="hero__desc">按游戏卡片视图展示封面、简介、平台和网盘地址，适合做内部资源索引或分享页。</p>
+        <div class="hero__actions">
+          <input id="searchInput" class="search" type="search" placeholder="搜索游戏名称、类型、平台" />
+          <a class="button button--ghost" href="/admin">进入管理端</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <section>
+        <div class="section-head">
+          <h2>游戏列表</h2>
+          <span id="gameCount" class="muted"></span>
+        </div>
+        <div id="gameGrid" class="game-grid"></div>
+      </section>
+    </main>
+
+    <template id="gameCardTemplate">
+      <article class="card">
+        <img class="card__image" alt="" />
+        <div class="card__body">
+          <div class="card__meta">
+            <span class="tag js-genre"></span>
+            <span class="tag tag--light js-platform"></span>
+          </div>
+          <h3 class="card__title"></h3>
+          <p class="card__summary"></p>
+          <a class="button" target="_blank" rel="noreferrer">打开网盘地址</a>
+        </div>
+      </article>
+    </template>
+
+    <script src="/script.js"></script>
+  </body>
+</html>
